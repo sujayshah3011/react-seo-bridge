@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "rsb"
+backend-path = ["."]
+
+[project]
+name = "react-seo-bridge"
+version = "0.1.0"
+description = "Static SEO auditor for React CSR applications"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+keywords = ["seo", "react", "audit", "crawler", "googlebot"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+    "pydantic>=2.7.0",
+    "tree-sitter>=0.25.0",
+    "tree-sitter-javascript>=0.23.0",
+    "tree-sitter-typescript>=0.23.0",
+    "jinja2>=3.1.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "mypy>=1.10",
+    "ruff>=0.4.0",
+]
+
+[project.scripts]
+rsb = "rsb.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["rsb*"]
+
+[tool.setuptools.package-data]
+"rsb.reporters" = ["templates/*.j2"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
