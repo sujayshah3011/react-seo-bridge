@@ -186,6 +186,77 @@ Near-term improvements:
 - broader metadata pattern coverage
 - expanded fixture matrix for larger app shapes
 
+## Roadmap
+
+| Mode | Status | Purpose |
+|---|---|---|
+| Mode C: Audit Only | Available now | Audit a React app offline and explain indexing risk before any migration work starts |
+| Mode A: Dynamic Rendering Bridge | Planned | Add a bridge layer for teams that need a temporary crawler-friendly HTML path while they plan SSR or SSG |
+| Future modes | Demand-driven | Expand only after Mode C proves real developer pull |
+
+### Why Mode C ships first
+
+Mode C is the fastest path to proving demand:
+
+- no prerender server required
+- no deployment coupling
+- no LLM or external API dependency
+- usable in local dev and CI on day one
+
+If developers find the audit useful, that is the signal to invest further in bridge and migration workflows.
+
+## Honest Positioning On Dynamic Rendering
+
+If Mode A ships, it will be framed honestly: a bridge, not the destination.
+
+Google Search Central's current guidance says dynamic rendering is a "workaround" and "not a recommended solution" because it adds operational complexity and resource overhead. The current Google documentation also recommends server-side rendering, static rendering, or hydration instead. The latest official Google page for this guidance was updated on **December 10, 2025**.
+
+That said, dynamic rendering is not automatically cloaking. Google explicitly distinguishes valid dynamic rendering from cloaking as long as crawlers and users are served materially similar content.
+
+References:
+
+- [Dynamic rendering as a workaround - Google Search Central](https://developers.google.com/search/docs/crawling-indexing/javascript/dynamic-rendering)
+- [Understand JavaScript SEO basics - Google Search Central](https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics)
+
+## Why Tree-sitter
+
+`react-seo-bridge` uses `tree-sitter` instead of older JavaScript parsers because this project needs modern React syntax coverage without a Node.js runtime.
+
+Why this matters:
+
+- JSX, TSX, TypeScript, optional chaining, and newer ECMAScript syntax need to parse reliably
+- static analysis should run offline in pure Python environments
+- React teams should not need Babel or a local Node toolchain just to audit a codebase
+
+For this use case, `tree-sitter-javascript` and `tree-sitter-typescript` are a better fit than older JS-only parsers.
+
+## A Potentially Novel Open-source Contribution
+
+One roadmap idea that could make this project genuinely useful beyond its own CLI is a maintained crawler registry:
+
+- a versioned `bot-agents.json`
+- released with the package
+- updated publicly in GitHub pull requests
+- usable by any rendering proxy, audit tool, or middleware that needs bot user-agent coverage
+
+The problem today is simple: most teams maintain bot user-agent allowlists manually, and those lists go stale fast.
+
+If this registry would be useful to you, that is strong signal that this project should grow beyond Mode C.
+
+## Interested In The Roadmap?
+
+If you would use any of the following, please open an issue and say so:
+
+- Mode A dynamic rendering bridge
+- a maintained `bot-agents.json` crawler registry
+- migration planning beyond the current audit mode
+
+Suggested issue titles:
+
+- `[interest] Mode A dynamic rendering bridge`
+- `[interest] bot-agents.json registry`
+- `[interest] migration planning workflow`
+
 ## License
 
 MIT
