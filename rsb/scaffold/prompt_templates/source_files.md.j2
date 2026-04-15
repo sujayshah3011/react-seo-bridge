@@ -1,0 +1,24 @@
+## SOURCE FILES
+{% if chunk.total_parts > 1 %}
+> **Part {{ chunk.part_number }} of {{ chunk.total_parts }}**
+> Migrate these files using the project context and classification summary above.
+{% endif %}
+
+{% for file in source_files %}
+### `{{ file.name }}`
+**Type:** {{ file.classification.component_type.value.upper() if file.classification else 'UNKNOWN' }}
+{% if file.classification and file.classification.reasons %}
+**Reason:** {{ file.classification.reasons | join(' | ') }}
+{% endif %}
+{% if file.classification and file.classification.migration_notes %}
+**Migration notes:**
+{% for note in file.classification.migration_notes %}
+- {{ note }}
+{% endfor %}
+{% endif %}
+
+```jsx
+{{ file.text }}
+```
+
+{% endfor %}

@@ -1,0 +1,27 @@
+# react-seo-bridge - nginx dynamic rendering snippet
+# Include this block inside your server {} block.
+
+map $http_user_agent $is_crawler {
+    default 0;
+{% for bot in bot_strings %}
+    ~*{{ bot }} 1;
+{% endfor %}
+}
+
+server {
+    set $prerender_url "{{ prerender_url }}";
+
+    location / {
+        if ($is_crawler = 1) {
+            set $escaped_url $scheme://$host$request_uri;
+            proxy_pass $prerender_url/render?url=$escaped_url;
+            break;
+        }
+
+        proxy_pass http://localhost:YOUR_APP_PORT;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_cache_bypass $http_upgrade;
+    }
+}

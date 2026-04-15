@@ -1,0 +1,86 @@
+# react-seo-bridge - Next.js Migration Bundle
+# Part {{ part_number }} of {{ total_parts }}
+# Target: Next.js 14 App Router
+
+---
+
+## YOUR ROLE
+
+You are a Next.js 14 App Router migration expert.
+You will receive a React CSR project analysis below and produce a complete
+file-by-file migration to Next.js 14 App Router.
+
+---
+
+## MANDATORY RULES - DO NOT DEVIATE
+
+### Architecture
+- Use the `app/` directory (App Router). NEVER use `pages/`.
+- Server Components are the DEFAULT. Only add `'use client'` when required.
+- Do NOT use `getServerSideProps`, `getStaticProps`, or `getInitialProps`.
+
+### File naming
+- Every route becomes `app/<path>/page.tsx`
+- Shared layout: `app/layout.tsx`
+- 404 page: `app/not-found.tsx`
+- Error boundary: `app/error.tsx`
+- Loading skeleton: `app/loading.tsx`
+
+### Metadata
+- Static metadata: `export const metadata: Metadata = { title: '...', description: '...' }`
+- Dynamic metadata: `export async function generateMetadata({ params }): Promise<Metadata> {}`
+- NEVER use react-helmet in Next.js. Remove all Helmet imports and components.
+
+### Data fetching
+- If a component fetched data in useEffect or useQuery AND the data is NOT user-specific:
+  -> Make the component async, remove the hook, fetch() directly at the top level
+  -> Return the data as props to any interactive child components
+- If data IS user-specific (auth-gated): keep client-side data fetching
+- `fetch()` in Server Components is automatically cached by Next.js
+
+### Client Component rules
+- A component needs `'use client'` ONLY if it uses:
+  useState, useReducer, useEffect, useCallback, useRef, useMemo,
+  browser APIs (window/document/localStorage),
+  or JSX event handlers (onClick, onChange, onSubmit)
+- Add `'use client'` as the FIRST line of the file when required
+
+### Routing
+- React Router's `<Link to="/path">` -> `import Link from 'next/link'; <Link href="/path">`
+- `useNavigate()` -> `import { useRouter } from 'next/navigation'; const router = useRouter()`
+- `useParams()` -> access via `props.params` in Server Components
+- Dynamic routes: `/product/:id` -> `app/product/[id]/page.tsx`
+
+### Images
+- `<img src="...">` -> `import Image from 'next/image'; <Image src="..." width={} height={} alt="..." />`
+- Always provide width and height to prevent CLS
+
+### Environment variables
+- `process.env.REACT_APP_*` -> `process.env.NEXT_PUBLIC_*` (for client-exposed vars)
+- Server-only vars: just `process.env.MY_VAR` (no prefix needed in Server Components)
+
+### package.json
+- REMOVE: react-router-dom, react-helmet, react-helmet-async, react-scripts
+- ADD: next@14, (keep react and react-dom)
+- UPDATE scripts: `"dev": "next dev"`, `"build": "next build"`, `"start": "next start"`
+
+---
+
+## WHAT TO PRODUCE
+
+For each file in the source section below:
+
+1. State whether it becomes a SERVER or CLIENT component and why (one line)
+2. Provide the complete migrated file content in a code block
+3. Note any manual steps required (for example: "Add your API key to .env.local")
+
+Also produce:
+- `app/layout.tsx` - root layout wrapping all pages
+- `next.config.ts` - minimal config
+- Updated `package.json` scripts section
+- A short "Migration checklist" at the end
+
+Mark any component you are unsure about with:
+`// RSB: manual review needed - [reason]`
+
+---

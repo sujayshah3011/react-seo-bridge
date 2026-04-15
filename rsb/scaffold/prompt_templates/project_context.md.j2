@@ -1,0 +1,54 @@
+## PROJECT CONTEXT
+
+**Project:** `{{ r.project_name }}`
+**Framework:** {{ r.bundle.framework }}
+**React Router:** v{{ r.bundle.react_router_version or '?' }}
+**SEO score (pre-migration):** {{ r.seo_score }}/100
+**Critical issues:** {{ r.critical_count }}
+
+### Route Manifest
+
+| Route | Component File | Dynamic | Client Hooks | Data Fetching |
+|-------|---------------|---------|--------------|---------------|
+{% for row in route_rows %}
+| `{{ row.path }}` | `{{ row.component_name }}` | {{ 'Y' if row.is_dynamic else '-' }} | {{ row.client_hooks | join(', ') if row.client_hooks else '-' }} | {{ row.data_fetching }} |
+{% endfor %}
+
+### Component Classification Summary
+
+**Server Components ({{ server_components | length }})** - these can usually remain server-rendered:
+{% for path in server_components %}
+- `{{ path.split('/')[-1] }}`
+{% endfor %}
+
+**Client Components ({{ client_components | length }})** - these require `'use client'`:
+{% for path in client_components %}
+- `{{ path.split('/')[-1] }}` - {{ classifications[path].reasons | join(', ') }}
+{% endfor %}
+
+### Migration Notes by Component
+{% for path, classification in classifications.items() %}
+{% if classification.migration_notes %}
+**`{{ path.split('/')[-1] }}`**
+{% for note in classification.migration_notes %}
+- {{ note }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+### Dependencies to add/remove
+
+**Remove from package.json:**
+- `react-router-dom`
+{% if r.bundle.has_helmet %}- `react-helmet`
+{% endif %}
+{% if r.bundle.has_helmet_async %}- `react-helmet-async`
+{% endif %}
+{% if r.bundle.framework == 'cra' %}- `react-scripts`
+{% endif %}
+
+**Add to package.json:**
+- `next@14`
+- `@types/node`, `@types/react`, `@types/react-dom` (if TypeScript)
+
+---

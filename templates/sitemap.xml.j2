@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{% for route in static_routes %}
+  <url>
+    <loc>{{ base_url }}{{ route.path }}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>{{ '1.0' if route.path == '/' else '0.8' }}</priority>
+  </url>
+{% endfor %}
+{% if dynamic_routes %}
+  <!--
+    {{ dynamic_routes | length }} dynamic route(s) were detected and skipped.
+    Supply explicit IDs or slugs to include them in a production sitemap.
+  -->
+{% endif %}
+</urlset>
