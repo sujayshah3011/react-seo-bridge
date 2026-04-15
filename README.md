@@ -4,13 +4,21 @@
 ![Offline](https://img.shields.io/badge/runtime-offline-0F766E)
 ![Parser](https://img.shields.io/badge/parser-tree--sitter-111827)
 ![CLI](https://img.shields.io/badge/cli-typer-2563EB)
-![Mode](https://img.shields.io/badge/mode-C%20Audit%20Only-F59E0B)
+![Modes](https://img.shields.io/badge/modes-A%20Inject%20%7C%20B%20Scaffold%20%7C%20C%20Audit-16A34A)
 
-Static SEO audits for React single-page apps.
+SEO tooling for React single-page apps that need a bridge from CSR to something crawler-friendly.
 
-`react-seo-bridge` helps React teams understand why a client-rendered app is hard for Google, Bing, social crawlers, and AI crawlers to index before committing to a Next.js migration or a prerendering layer.
+`react-seo-bridge` helps React teams answer three practical questions:
 
-It runs fully offline, parses JavaScript and TypeScript with `tree-sitter`, and generates both machine-readable and human-readable reports.
+- What is broken for crawlers right now?
+- Can we deploy a temporary bot-safe prerender bridge without rewriting the app?
+- If we do migrate to Next.js, how do we hand an LLM the right context to produce a usable first draft?
+
+It runs with Python, parses JavaScript and TypeScript with `tree-sitter`, and now ships three connected workflows:
+
+- `rsb audit` for offline SEO analysis
+- `rsb inject` for dynamic rendering bridge config generation
+- `rsb scaffold` for building an LLM-ready Next.js migration bundle
 
 ## Why This Exists
 
@@ -31,8 +39,11 @@ This project focuses on the questions teams usually need answered early:
 - Flags dynamic routes that cannot be auto-sitemapped safely
 - Detects Helmet, Helmet Async, direct `document.title`, Open Graph, and canonical patterns
 - Estimates SEO and performance risk from static analysis only
-- Writes `rsb-audit.json` and `rsb-audit.md`
-- Exits non-zero when critical issues are found, which makes it CI-friendly
+- Generates Vercel, Cloudflare, nginx, and Express bot-routing bridge files
+- Ships a FastAPI + Playwright prerender server with disk cache
+- Builds a token-aware Next.js App Router migration bundle for Claude or GPT-style models
+- Writes `rsb-audit.json`, `rsb-audit.md`, sitemap, robots, and scaffold bundle artifacts
+- Exits non-zero when critical audit issues are found, which makes Mode C CI-friendly
 
 ## Best Fit
 
@@ -42,18 +53,42 @@ This project focuses on the questions teams usually need answered early:
 | Teams comparing CSR vs SSR/SSG tradeoffs | Server-side rendering framework generation |
 | Offline analysis in CI or local dev | Live Google Search Console data |
 
+## Modes
+
+| Mode | Command | Purpose |
+|---|---|---|
+| Mode C: Audit | `rsb audit ./my-react-app` | Inspect crawlability, metadata, routing, and CWV risks |
+| Mode A: Inject | `rsb inject ./my-react-app --target vercel ...` | Generate edge or server config that routes bots to a prerender service |
+| Mode B: Scaffold | `rsb scaffold ./my-react-app` | Produce an LLM-ready migration bundle for Next.js App Router |
+
 ## Quick Start
 
 ### Install
 
 ```bash
 pip install -e ".[dev]"
+playwright install chromium
 ```
 
-### Run an audit
+### Audit a React app
 
 ```bash
 rsb audit ./path/to/react-app
+```
+
+### Generate dynamic rendering bridge files
+
+```bash
+rsb inject ./path/to/react-app \
+  --target vercel \
+  --prerender-url http://localhost:3000 \
+  --base-url https://mysite.com
+```
+
+### Build an LLM migration bundle
+
+```bash
+rsb scaffold ./path/to/react-app
 ```
 
 ### Run tests
@@ -69,6 +104,9 @@ pytest tests/ -v --cov=rsb
 | Command | What it does |
 |---|---|
 | `rsb audit <project_path>` | Run the Mode C static audit |
+| `rsb inject <project_path>` | Generate Mode A dynamic rendering bridge files |
+| `rsb serve` | Start the Mode A prerender server |
+| `rsb scaffold <project_path>` | Build the Mode B migration context bundle |
 | `rsb version` | Print the installed version |
 
 ### `rsb audit` options
@@ -79,6 +117,23 @@ pytest tests/ -v --cov=rsb
 | `--json-only` | Skip Markdown generation |
 | `--no-output` | Print terminal summary only |
 
+### `rsb inject` options
+
+| Option | Description |
+|---|---|
+| `--target`, `-t` | Deploy target: `vercel`, `cloudflare`, `nginx`, or `express` |
+| `--prerender-url`, `-p` | Public URL of your prerender server |
+| `--base-url`, `-b` | Production base URL used for sitemap and robots |
+| `--output`, `-o` | Custom output directory for generated files |
+
+### `rsb scaffold` options
+
+| Option | Description |
+|---|---|
+| `--output`, `-o` | Custom output directory for scaffold bundle files |
+| `--target`, `-t` | Migration target. Current value: `nextjs14` |
+| `--no-audit` | Reuse an existing `rsb-audit.json` instead of running audit again |
+
 ### Exit codes
 
 | Code | Meaning |
@@ -88,6 +143,8 @@ pytest tests/ -v --cov=rsb
 | `2` | Audit completed and critical SEO issues were found |
 
 ## Example Output
+
+### `rsb audit`
 
 ```text
 +------------------------------+
@@ -114,6 +171,40 @@ JSON report: /path/to/react-app/rsb-output/rsb-audit.json
 Markdown report: /path/to/react-app/rsb-output/rsb-audit.md
 ```
 
+### `rsb inject`
+
+```text
+react-seo-bridge - Inject Mode A
+Target: vercel
+
+Generated 4 file(s) in ./my-react-app/rsb-output/inject:
+  - middleware.js
+  - vercel.json
+  - sitemap.xml
+  - robots.txt
+
+Next steps:
+  1. Start the prerender server with rsb serve --port 3000
+  2. Set RSB_PRERENDER_URL in your deploy platform
+  3. Copy generated public files into your app
+```
+
+### `rsb scaffold`
+
+```text
+react-seo-bridge - Scaffold Mode B
+
+Migration bundle ready!
+
+  Files analysed:   42
+  Routes found:     18
+  Bundle chunks:    1
+  Estimated tokens: 54,000
+
+Bundle location:
+  ./my-react-app/rsb-output/scaffold/rsb-scaffold-bundle.md
+```
+
 ## Generated Reports
 
 ### `rsb-audit.json`
@@ -130,6 +221,25 @@ A GitHub-friendly audit summary with:
 - discovered routes
 - Core Web Vitals risk notes
 - bundle analysis summary
+
+### Inject output
+
+Depending on target, `rsb inject` generates:
+
+- `middleware.js` and `vercel.json`
+- or `worker.js` and `wrangler.toml`
+- or `rsb-nginx-snippet.conf`
+- or `rsb-express-middleware.js`
+- plus `sitemap.xml` and `robots.txt`
+
+### Scaffold output
+
+`rsb scaffold` writes:
+
+- `rsb-output/scaffold/rsb-scaffold-bundle.md`
+- or `rsb-scaffold-bundle-part1.md`, `part2.md`, and so on for larger projects
+
+Paste that bundle into Claude or another large-context model to get a structured Next.js App Router migration draft.
 
 ## How It Works
 
@@ -148,7 +258,11 @@ A GitHub-friendly audit summary with:
 | [`rsb/cli.py`](./rsb/cli.py) | Typer CLI entrypoint |
 | [`rsb/schemas.py`](./rsb/schemas.py) | Shared Pydantic v2 models |
 | [`rsb/analyser/`](./rsb/analyser) | Static analysis pipeline |
+| [`rsb/prerender/`](./rsb/prerender) | FastAPI + Playwright prerender service |
+| [`rsb/generators/`](./rsb/generators) | Deploy-target config generators |
 | [`rsb/reporters/`](./rsb/reporters) | JSON and Markdown report generation |
+| [`rsb/scaffold/`](./rsb/scaffold) | LLM migration bundle generation |
+| [`templates/`](./templates) | Root Jinja templates for Mode A output files |
 | [`tests/`](./tests) | Fixtures and pytest coverage |
 
 ## Development
@@ -157,8 +271,11 @@ A GitHub-friendly audit summary with:
 
 ```bash
 python3 -m pip install -e ".[dev]"
+playwright install chromium
 pytest tests/ -v --cov=rsb
 python3 -m rsb audit tests/fixtures/cra_basic --no-output
+python3 -m rsb inject tests/fixtures/cra_basic --target vercel --prerender-url http://localhost:3000 --base-url https://mysite.com
+python3 -m rsb scaffold tests/fixtures/cra_basic
 ```
 
 ### Tech stack
@@ -169,45 +286,36 @@ python3 -m rsb audit tests/fixtures/cra_basic --no-output
 - Pydantic v2 for schemas
 - Jinja2 for Markdown report rendering
 - `tree-sitter 0.25.x` language wheels for parsing
+- FastAPI and Uvicorn for the prerender server
+- Playwright Chromium for HTML snapshot rendering
 
 ## Project Status
 
-`react-seo-bridge` is currently focused on **Mode C: Audit Only**.
+`react-seo-bridge` now has an end-to-end early bridge story:
 
-Current state:
-
-- offline static analysis is implemented
-- JSON and Markdown audit reports are implemented
-- fixture-based tests are implemented
+- Mode C is implemented for offline SEO audit
+- Mode A is implemented for dynamic rendering bridge generation
+- Mode B is implemented for LLM-assisted migration scaffolding
 
 Near-term improvements:
 
 - richer route-to-component resolution for more routing styles
 - broader metadata pattern coverage
-- expanded fixture matrix for larger app shapes
+- a maintained public crawler registry workflow
+- more real-project fixtures and sample outputs
 
 ## Roadmap
 
 | Mode | Status | Purpose |
 |---|---|---|
 | Mode C: Audit Only | Available now | Audit a React app offline and explain indexing risk before any migration work starts |
-| Mode A: Dynamic Rendering Bridge | Planned | Add a bridge layer for teams that need a temporary crawler-friendly HTML path while they plan SSR or SSG |
-| Future modes | Demand-driven | Expand only after Mode C proves real developer pull |
-
-### Why Mode C ships first
-
-Mode C is the fastest path to proving demand:
-
-- no prerender server required
-- no deployment coupling
-- no LLM or external API dependency
-- usable in local dev and CI on day one
-
-If developers find the audit useful, that is the signal to invest further in bridge and migration workflows.
+| Mode A: Dynamic Rendering Bridge | Available now | Generate edge and server bridge files plus a prerender service for bots |
+| Mode B: Migration Scaffolder | Available now | Produce an LLM-ready Next.js migration bundle from the audited codebase |
+| Future modes | Demand-driven | Expand based on real developer pull and operating pain points |
 
 ## Honest Positioning On Dynamic Rendering
 
-If Mode A ships, it will be framed honestly: a bridge, not the destination.
+Mode A is framed honestly: a bridge, not the destination.
 
 Google Search Central's current guidance says dynamic rendering is a "workaround" and "not a recommended solution" because it adds operational complexity and resource overhead. The current Google documentation also recommends server-side rendering, static rendering, or hydration instead. The latest official Google page for this guidance was updated on **December 10, 2025**.
 
@@ -241,7 +349,7 @@ One roadmap idea that could make this project genuinely useful beyond its own CL
 
 The problem today is simple: most teams maintain bot user-agent allowlists manually, and those lists go stale fast.
 
-If this registry would be useful to you, that is strong signal that this project should grow beyond Mode C.
+If this registry would be useful to you, that is strong signal that this project should grow beyond the current feature set.
 
 ## Interested In The Roadmap?
 
@@ -249,13 +357,26 @@ If you would use any of the following, please open an issue and say so:
 
 - Mode A dynamic rendering bridge
 - a maintained `bot-agents.json` crawler registry
-- migration planning beyond the current audit mode
+- deeper migration planning beyond the current scaffold output
 
 Suggested issue titles:
 
 - `[interest] Mode A dynamic rendering bridge`
 - `[interest] bot-agents.json registry`
 - `[interest] migration planning workflow`
+
+Or use the GitHub issue template included in this repo for roadmap-interest signals.
+
+## First Release
+
+The first public cut of this repo is intended to cover the full bridge workflow:
+
+- inspect a React SPA with `rsb audit`
+- generate crawler-routing bridge assets with `rsb inject`
+- run a local prerender service with `rsb serve`
+- produce a migration-ready context bundle with `rsb scaffold`
+
+See [CHANGELOG.md](./CHANGELOG.md) for the release notes that map to the initial tagged version.
 
 ## License
 

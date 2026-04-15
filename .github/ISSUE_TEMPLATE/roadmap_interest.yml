@@ -1,0 +1,59 @@
+name: Roadmap interest
+description: Signal interest in a roadmap area so project priorities reflect real demand.
+title: "[interest] "
+labels:
+  - roadmap
+  - interest
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing demand. Short, concrete signals help keep this repo focused on work people actually want.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area are you interested in?
+      options:
+        - Mode A dynamic rendering bridge
+        - bot-agents.json crawler registry
+        - Mode B migration scaffolding
+        - deeper Mode C audit coverage
+        - deployment guides and examples
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: What are you trying to do?
+      description: Describe the real workflow, blocker, or team problem behind this request.
+      placeholder: We run a Vite SPA on Cloudflare and need a safe temporary crawler bridge while planning a Next.js migration.
+    validations:
+      required: true
+
+  - type: textarea
+    id: stack
+    attributes:
+      label: What stack are you using?
+      description: Include framework, host, edge platform, router version, and anything relevant.
+      placeholder: React 18, Vite, react-router-dom v6, Cloudflare Pages, Python 3.11
+
+  - type: dropdown
+    id: urgency
+    attributes:
+      label: How urgent is this for you?
+      options:
+        - Just exploring
+        - Useful this quarter
+        - Actively blocked right now
+    validations:
+      required: true
+
+  - type: textarea
+    id: success
+    attributes:
+      label: What would success look like?
+      description: Say what output, workflow, or documentation would make this feature clearly useful.
+      placeholder: A generated Cloudflare Worker plus deploy docs and a verified bot list would be enough for us to pilot it.
+
